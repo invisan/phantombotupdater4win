@@ -1,2 +1,4 @@
 # phantombotupdater4win
-Update Script for PhantomBot for Windows Users
+Rework of my Linux Updater for Windows
+
+Will Add Information once it is running properly
