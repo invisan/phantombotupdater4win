@@ -1,4 +1,4 @@
-@echo off & setlocal enabledelayedexpansion
+@echo on & setlocal enabledelayedexpansion
 :: Phantombot Update for Windows by InviSan
 :: v0.1
 
@@ -45,9 +45,12 @@ powershell.exe Expand-Archive -LiteralPath "PhantomBot.zip" -DestinationPath "ex
 if [%pbuild%]==[nightly] set "pvar=Revision"
 if NOT [%pbuild%]==[nightly] set "pvar=Version"
 :: Read current Version/Revision from Manifest File
-for /F "tokens=2 delims=:" %%a in ('findstr /I "Implementation-%pvar%" extracted\META-INF\MANIFEST.MF') do set "pcurver=%%a"
-if [%pbuild%]==[nightly] set "pnewver=<build.xml"
-for /F "tokens=2 delims=\"" %%a in ('findstr /I "version" stablebuild.xml') do set "pnewver=%%a"
+for /F "tokens=2 delims=: " %%a in ('findstr /I "Implementation-%pvar%" extracted\META-INF\MANIFEST.MF') do set "pcurver=%%a"
+:: If the Build is nightly read the Implementations-Revision directly from build.xml
+if [%pbuild%]==[nightly] set /p pnewver=<build.xml
+if [%pbuild%]==[nightly] goto check2
+:: If the Build is non nightly use findstr to get the Version
+for /F "skip=0 tokens=2 delims==" %%a in ('findstr /I "value=" stablebuild.xml') do set "pnewver=%%a"
 
 echo New Version is: %pnewver%
 echo Installed Version is: %pcurver%
