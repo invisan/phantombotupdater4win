@@ -28,15 +28,17 @@ echo This is the Service Setting: %pservice%
 
 :main
 :: Get Newest Version Number
-if [%pbuild%]==[stable] curl -o build.xml --url "https://raw.githubusercontent.com/PhantomBot/PhantomBot/master/build.xml"
-if [%pbuild%]==[pbotde] curl -o build.xml --url "https://raw.githubusercontent.com/PhantomBotDE/PhantomBotDE/master/build.xml"
-if [%pbuild%]==[nightly] curl -o build.xml --url "https://raw.githubusercontent.com/PhantomBot/nightly-build/master/last_repo_version"
+if [%pbuild%]==[stable] curl -o build.xml --url "https://raw.githubusercontent.com/PhantomBot/PhantomBot/master/build.xml" -L
+if [%pbuild%]==[pbotde] curl -o build.xml --url "https://raw.githubusercontent.com/PhantomBotDE/PhantomBotDE/master/build.xml" -L
+if [%pbuild%]==[nightly] curl -o build.xml --url "https://raw.githubusercontent.com/PhantomBot/nightly-build/master/last_repo_version" -L
 goto versioncheck
 
 :versioncheck
 :: Get Version from installed PhantomBot 
 :: Copy PhantomBot.jar to get MetaInfo
 xcopy %ppath%\PhantomBot.jar /C /Y /R
+:: If PhantomBot.zip already exists remove it
+if exist PhantomBot.zip del PhantomBot.zip
 :: Rename jar to zip to extract it with Powershell
 rename PhantomBot.jar PhantomBot.zip
 :: Extract content of Jar to get access to MetaInfo File
@@ -53,25 +55,29 @@ if [%pbuild%]==[nightly] goto checkver
 for /F "tokens=5 delims== " %%a in ('findstr /I "name=.version..value=" build.xml') do set pnewver=%%a
 :: Remove quotes from the Variable.
 set pnewver=%pnewver:"=%
-:: Goto Version Check.
-goto checkver
-
-:checkver
-:: This is for the nightly Build
-:: Check if both Revisions/Versions are the same. If not download new Version. Else Skip.
+:: Check if both Revisions/Versions are the same. If yes skip. Else go to Download.
 if [%pnewver%]==[%pcurver%] goto skip
 goto download
 
-
 :download
 :: Different Version on the Web. Downloading.
-if [%pbuild%]==[stable] curl -o bot.zip --url "https://github.com/PhantomBot/PhantomBot/releases/download/v%pnewver%/PhantomBot-%pnewver%-win.zip"
-if [%pbuild%]==[pbotde] curl -o bot.zip --url "https://github.com/PhantomBotDE/PhantomBotDE/releases/download/v%pnewver%/PhantomBotDE-%pnewver%.zip"
-if [%pbuild%]==[nightly] curl -o bot.zip --url "https://github.com/PhantomBot/nightly-build/raw/master/PhantomBot-nightly-lin.zip"
+:: Check which Version is requested.
+if [%pbuild%]==[stable] curl -o bot.zip --url "https://github.com/PhantomBot/PhantomBot/releases/download/v%pnewver%/PhantomBot-%pnewver%-win.zip" -L
+if [%pbuild%]==[pbotde] curl -o bot.zip --url "https://github.com/PhantomBotDE/PhantomBotDE/releases/download/v%pnewver%/PhantomBotDE-%pnewver%.zip" -L
+if [%pbuild%]==[nightly] curl -o bot.zip --url "https://github.com/PhantomBot/nightly-build/raw/master/PhantomBot-nightly-win.zip" -L
+
+:: Extract contents from bot.zip to Folder bot
+powershell.exe Expand-Archive -LiteralPath "bot.zip" -Force
+
+:: Remove old Backup Folder
+rd /Q %ppath%old
+:: Move old Bot Folder if it exists to Bot Old 
+move %ppath% %ppath%old
+:: Move Subfolder from bot Folder to main Folder.
+move bot\PhantomBot-%pnewver% %ppath%
+:: Remove Folder called bot
+rd /Q bot
+
 
 :skip
 :: No New Version found. Restarting Bot.
-
-
-
-
